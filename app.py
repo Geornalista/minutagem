@@ -15,14 +15,16 @@ st.set_page_config(
 with open('style.css') as f:
 	st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html = True)
 
-ligas = ['Argentina','Austrália','Áustria','Bélgica','Brasil','Bulgária','China','Croácia',
-         'Dinamarca','Inglaterra','França','Alemanha','Grécia','Itália','Japão','Holanda',
-         'Noruega','Polônia','Portugal','Romênia','Rússia','Escócia','Coréia do Sul','Espanha',
-         'Suécia','Suíça','Turquia','EUA','Uruguai','Sérvia']
+ligas = ['Argentina','Austrália','Áustria','Bélgica','Brasil','Bulgária','China','Coréia do Sul',
+	 'Croácia','Dinamarca','Escócia','Espanha','EUA','Inglaterra','França','Alemanha','Grécia',
+	 'Itália','Japão','Holanda','Noruega','Polônia','Portugal','Romênia','Rússia','Sérvia',
+	 'Suécia','Suíça','Turquia','Uruguai']
 
 with st.container():
   liga = st.selectbox('Escolha a liga',ligas)
   liga = unidecode.unidecode(liga.lower())
+  if liga == 'coreia do sul':
+     liga = 'coreia'
 
 tab1,tab2 = st.tabs([
   "📊 Gols Marcados",
