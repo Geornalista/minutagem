@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    <meta name="theme-color" content="#0d1b2a">
+    <link rel="manifest" href="./manifest.json"> <link rel="apple-touch-icon" href="icons/icon-192.png"> </head>
+    
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minutagem Evolution | Chart.js Edition</title>
@@ -731,6 +735,15 @@
         document.getElementById('bestYearDesc').innerText = `Recorde de ${best.count} gols na temporada.`;
     }
 </script>
-
+<script>
+    // Se o navegador suportar service workers, registre o nosso arquivo
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(reg => console.log('App registrado!', reg))
+                .catch(err => console.log('Falha ao registrar:', err));
+        });
+    }
+</script>
 </body>
 </html>
