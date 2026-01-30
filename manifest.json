@@ -1,7 +1,7 @@
 {
-  "name": "Comparativo Europeu",
-  "short_name": "Ligas EU",
-  "description": "Análise comparativa rápida das ligas europeias",
+  "name": "Minutagem Evolution",
+  "short_name": "Minutagem",
+  "description": "Análise dos minutos dos gols",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0d1b2a",
