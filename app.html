@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minutagem Evolution | Chart.js Edition</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Tema Dark / Midnight */
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            
+            /* Gradientes de Anos */
+            --grad-1: linear-gradient(to top, rgba(56, 189, 248, 0.5), rgba(56, 189, 248, 0.1));
+            --border-1: #38bdf8;
+            
+            --grad-2: linear-gradient(to top, rgba(168, 85, 247, 0.5), rgba(168, 85, 247, 0.1));
+            --border-2: #a855f7;
+            
+            --grad-3: linear-gradient(to top, rgba(234, 179, 8, 0.5), rgba(234, 179, 8, 0.1));
+            --border-3: #eab308;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* Header Moderno */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;
+        }
+        header h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; }
+        header span.highlight { color: var(--accent); }
+        .badge { background: #334155; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 1px; }
+
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        /* Sidebar de Controles */
+        .sidebar {
+            background: var(--bg-card);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            position: sticky; top: 20px;
+        }
+        
+        .control-group { margin-bottom: 25px; }
+        .control-group label { display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 10px; font-weight: 600; text-transform: uppercase; }
+        
+        select {
+            width: 100%;
+            background: #0f172a;
+            color: white;
+            border: 1px solid #334155;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Outfit';
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        select:focus { outline: none; border-color: var(--accent); }
+        select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Toggle de Visualização */
+        .view-toggle {
+            display: flex; background: #0f172a; padding: 5px; border-radius: 10px; margin-top: 30px;
+        }
+        .toggle-btn {
+            flex: 1; border: none; background: transparent; color: var(--text-muted);
+            padding: 10px; cursor: pointer; border-radius: 8px; font-weight: 600; transition: 0.3s;
+        }
+        .toggle-btn.active { background: var(--bg-card); color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        /* Área Principal */
+        .main-stage { display: none; opacity: 0; transition: opacity 0.5s; }
+
+        /* Cards de Insight */
+        .insights-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+        .insight-card {
+            background: var(--bg-card); padding: 20px; border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden;
+        }
+        .insight-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--accent);
+        }
+        .insight-val { font-size: 2rem; font-weight: 700; margin: 5px 0; }
+        .insight-label { color: var(--text-muted); font-size: 0.9rem; }
+        .insight-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 3rem; opacity: 0.1; }
+
+        /* Gráfico Chart.js */
+        .chart-wrapper {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            height: 500px;
+            position: relative;
+        }
+
+        /* Stats Grid (Mini cards anuais) */
+        .stats-mini-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 25px;
+        }
+        .mini-stat {
+            background: #0f172a; padding: 15px; border-radius: 12px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .mini-year { font-size: 0.8rem; opacity: 0.7; margin-bottom: 5px; display: block; }
+        .mini-val { font-size: 1.4rem; font-weight: 700; color: white; }
+
+        /* Loader */
+        .loader-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.9); z-index: 10;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 16px;
+        }
+        .loader-bar {
+            width: 200px; height: 4px; background: #334155; border-radius: 2px; overflow: hidden; margin-top: 15px;
+        }
+        .loader-progress {
+            width: 50%; height: 100%; background: var(--accent);
+            animation: load 1.5s infinite ease-in-out;
+        }
+        @keyframes load { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+
+        @media (max-width: 900px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .sidebar { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div>
+            <h1><i class="fas fa-futbol"></i> Scout<span class="highlight">Vision</span></h1>
+        </div>
+        <div class="badge">V3.0 • Chart.js</div>
+    </header>
+
+    <div class="dashboard-grid">
+        <aside class="sidebar">
+            <div class="control-group">
+                <label>1. Selecione a Competição</label>
+                <select id="leagueSelect">
+                    <option value="" disabled selected>Carregando...</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>2. Selecione o Clube</label>
+                <select id="teamSelect" disabled>
+                    <option>Aguardando liga...</option>
+                </select>
+            </div>
+
+            <div class="view-toggle">
+                <button class="toggle-btn active" onclick="switchView('marcados')">Gols Pró</button>
+                <button class="toggle-btn" onclick="switchView('sofridos')">Gols Contra</button>
+            </div>
+
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <small style="color: var(--text-muted); display: block; line-height: 1.5;">
+                    <i class="fas fa-info-circle"></i> Análise baseada em todos os jogos disponíveis nas temporadas selecionadas (2023-2026).
+                </small>
+            </div>
+        </aside>
+
+        <main id="mainContent" class="main-stage">
+            
+            <div class="insights-row">
+                <div class="insight-card">
+                    <div class="insight-label">Momento Mais Perigoso</div>
+                    <div class="insight-val" id="patternTime">--</div>
+                    <div class="insight-label" id="patternDesc">--</div>
+                    <i class="fas fa-fire insight-icon"></i>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-label">Melhor Temporada</div>
+                    <div class="insight-val" id="bestYear">--</div>
+                    <div class="insight-label" id="bestYearDesc">--</div>
+                    <i class="fas fa-calendar-check insight-icon"></i>
+                </div>
+            </div>
+
+            <div class="chart-wrapper">
+                <canvas id="goalsChart"></canvas>
+                
+                <div id="loader" class="loader-overlay">
+                    <div style="color: var(--accent); font-weight: 600;">Processando Dados...</div>
+                    <div class="loader-bar"><div class="loader-progress"></div></div>
+                </div>
+            </div>
+
+            <div class="stats-mini-grid" id="statsGrid"></div>
+
+        </main>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 1. CONFIGURAÇÃO DE DADOS (BASE COMPLETA)
+    // ==========================================
+    const dataSources = {
+        'Alemanha (Bundesliga)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%20Bundesliga_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%20Bundesliga_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%20Bundesliga_20252026.xlsx' }
+        ],
+        'Alemanha (2. Bundesliga)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%202.%20Bundesliga_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%202.%20Bundesliga_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%202.%20Bundesliga_20252026.xlsx' }
+        ],
+        'América do Sul (Libertadores)': [
+            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20America%20Copa%20Libertadores_2023.xlsx' },
+            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20America%20Copa%20Libertadores_2024.xlsx' },
+            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20America%20Copa%20Libertadores_2025.xlsx' }
+        ],
+        'Arábia Saudita (Pro League)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Saudi%20Arabia%20Professional%20League_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Saudi%20Arabia%20Professional%20League_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Saudi%20Arabia%20Professional%20League_20252026.xlsx' }
+        ],
+        'Austrália (A-League)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Australia%20A-League_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Australia%20A-League_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Australia%20A-League_20252026.xlsx' }
+        ],
+        'Áustria (Bundesliga)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Austria%20Bundesliga_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Austria%20Bundesliga_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Austria%20Bundesliga_20252026.xlsx' }
+        ],
+        'Bélgica (Pro League)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Belgium%20Pro%20League_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Belgium%20Pro%20League_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Belgium%20Pro%20League_20252026.xlsx' }
+        ],
+        'Brasil (Série A)': [
+            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Brazil%20Serie%20A_2023.xlsx' },
+            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Brazil%20Serie%20A_2024.xlsx' },
+            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Brazil%20Serie%20A_2025.xlsx' }
+        ],
+        'Brasil (Série B)': [
+            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Brazil%20Serie%20B_2023.xlsx' },
+            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Brazil%20Serie%20B_2024.xlsx' },
+            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Brazil%20Serie%20B_2025.xlsx' }
+        ],
+        'Brasil (Série C)': [
+            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Brazil%20Serie%20C_2023.xlsx' },
+            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Brazil%20Serie%20C_2024.xlsx' },
+            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Brazil%20Serie%20C_2025.xlsx' }
+        ],
+        'Chile (Primera División)': [
+            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Chile%20Primera%20Divisi%C3%B3n_2023.xlsx' },
+            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Chile%20Primera%20Divisi%C3%B3n_2024.xlsx' },
+            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Chile%20Primera%20Divisi%C3%B3n_2025.xlsx' }
+        ],
+        'China (Super League)': [
+            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/China%20Chinese%20Super%20League_2023.xlsx' },
+            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/China%20Chinese%20Super%20League_2024.xlsx' },
+            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/China%20Chinese%20Super%20League_2025.xlsx' }
+        ],
+        'Coreia do Sul (K-League 1)': [
+            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Korea%20K%20League%201_2023.xlsx' },
+            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Korea%20K%20League%201_2024.xlsx' },
+            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Korea%20K%20League%201_2025.xlsx' }
+        ],
+        'Coreia do Sul (K-League 2)': [
+            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Korea%20K%20League%202_2023.xlsx' },
+            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Korea%20K%20League%202_2024.xlsx' },
+            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Korea%20K%20League%202_2025.xlsx' }
+        ],
+        'Croácia (Prva HNL)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Croatia%20Prva%20HNL_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Croatia%20Prva%20HNL_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Croatia%20Prva%20HNL_20252026.xlsx' }
+        ],
+        'Dinamarca (Superliga)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Denmark%20Superliga_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Denmark%20Superliga_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Denmark%20Superliga_20252026.xlsx' }
+        ],
+        'Egito (Premier League)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Egypt%20Egyptian%20Premier%20League_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Egypt%20Egyptian%20Premier%20League_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Egypt%20Egyptian%20Premier%20League_20252026.xlsx' }
+        ],
+        'Escócia (Premiership)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Scotland%20Premiership_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Scotland%20Premiership_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Scotland%20Premiership_20252026.xlsx' }
+        ],
+        'Eslováquia (Super Liga)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Slovakia%20Super%20Liga_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Slovakia%20Super%20Liga_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Slovakia%20Super%20Liga_20252026.xlsx' }
+        ],
+        'Eslovênia (PrvaLiga)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Slovenia%20PrvaLiga_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Slovenia%20PrvaLiga_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Slovenia%20PrvaLiga_20252026.xlsx' }
+        ],
+        'Espanha (La Liga)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Spain%20La%20Liga_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Spain%20La%20Liga_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Spain%20La%20Liga_20252026.xlsx' }
+        ],
+        'Espanha (Segunda División)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Spain%20Segunda%20Divisi%C3%B3n_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Spain%20Segunda%20Divisi%C3%B3n_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Spain%20Segunda%20Divisi%C3%B3n_20252026.xlsx' }
+        ],
+        'EUA (MLS)': [
+            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/USA%20MLS_2023.xlsx' },
+            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/USA%20MLS_2024.xlsx' },
+            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/USA%20MLS_2025.xlsx' }
+        ],
+        'Europa (UEFA Champions League)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Europe%20UEFA%20Champions%20League_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Europe%20UEFA%20Champions%20League_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Europe%20UEFA%20Champions%20League_20252026.xlsx' }
+        ],
+        'França (Ligue 1)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20Ligue%201_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20Ligue%201_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20Ligue%201_20252026.xlsx' }
+        ],
+        'França (Ligue 2)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20Ligue%202_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20Ligue%202_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20Ligue%202_20252026.xlsx' }
+        ],
+        'França (National)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20National_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20National_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20National_20252026.xlsx' }
+        ],
+        'Grécia (Super League)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Greece%20Super%20League_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Greece%20Super%20League_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Greece%20Super%20League_20252026.xlsx' }
+        ],
+        'Holanda (Eredivisie)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Netherlands%20Eredivisie_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Netherlands%20Eredivisie_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Netherlands%20Eredivisie_20252026.xlsx' }
+        ],
+        'Holanda (Eerste Divisie)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Netherlands%20Eerste%20Divisie_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Netherlands%20Eerste%20Divisie_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Netherlands%20Eerste%20Divisie_20252026.xlsx' }
+        ],
+        'Inglaterra (Premier League)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/England%20Premier%20League_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/England%20Premier%20League_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/England%20Premier%20League_20252026.xlsx' }
+        ],
+        'Inglaterra (Championship)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/England%20Championship_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/England%20Championship_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/England%20Championship_20252026.xlsx' }
+        ],
+        'Inglaterra (League One)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/England%20EFL%20League%20One_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/England%20EFL%20League%20One_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/England%20EFL%20League%20One_20252026.xlsx' }
+        ],
+        'Inglaterra (League Two)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/England%20EFL%20League%20Two_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/England%20EFL%20League%20Two_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/England%20EFL%20League%20Two_20252026.xlsx' }
+        ],
+        'Israel (Premier League)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Israel%20Israeli%20Premier%20League_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Israel%20Israeli%20Premier%20League_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Israel%20Israeli%20Premier%20League_20252026.xlsx' }
+        ],
+        'Itália (Serie A)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Italy%20Serie%20A_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Italy%20Serie%20A_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Italy%20Serie%20A_20252026.xlsx' }
+        ],
+        'Itália (Serie B)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Italy%20Serie%20B_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Italy%20Serie%20B_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Italy%20Serie%20B_20252026.xlsx' }
+        ],
+        'Japão (J1 League)': [
+            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Japan%20J1%20League_2023.xlsx' },
+            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Japan%20J1%20League_2024.xlsx' },
+            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Japan%20J1%20League_2025.xlsx' }
+        ],
+        'Japão (J2 League)': [
+            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Japan%20J2%20League_2023.xlsx' },
+            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Japan%20J2%20League_2024.xlsx' },
+            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Japan%20J2%20League_2025.xlsx' }
+        ],
+        'Noruega (Eliteserien)': [
+            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Norway%20Eliteserien_2023.xlsx' },
+            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Norway%20Eliteserien_2024.xlsx' },
+            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Norway%20Eliteserien_2025.xlsx' }
+        ],
+        'Polônia (Ekstraklasa)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Poland%20Ekstraklasa_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Poland%20Ekstraklasa_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Poland%20Ekstraklasa_20252026.xlsx' }
+        ],
+        'Portugal (Liga NOS)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Portugal%20Liga%20NOS_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Portugal%20Liga%20NOS_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Portugal%20Liga%20NOS_20252026.xlsx' }
+        ],
+        'Portugal (LigaPro)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Portugal%20LigaPro_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Portugal%20LigaPro_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Portugal%20LigaPro_20252026.xlsx' }
+        ],
+        'República Tcheca (First League)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Czech%20Republic%20First%20League_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Czech%20Republic%20First%20League_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Czech%20Republic%20First%20League_20252026.xlsx' }
+        ],
+        'Romênia (Liga I)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Romania%20Liga%20I_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Romania%20Liga%20I_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Romania%20Liga%20I_20252026.xlsx' }
+        ],
+        'Sérvia (SuperLiga)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Serbia%20SuperLiga_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Serbia%20SuperLiga_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Serbia%20SuperLiga_20252026.xlsx' }
+        ],
+        'Suécia (Allsvenskan)': [
+            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Sweden%20Allsvenskan_2023.xlsx' },
+            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Sweden%20Allsvenskan_2024.xlsx' },
+            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Sweden%20Allsvenskan_2025.xlsx' }
+        ],
+        'Suíça (Super League)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Switzerland%20Super%20League_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Switzerland%20Super%20League_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Switzerland%20Super%20League_20252026.xlsx' }
+        ],
+        'África do Sul (Premier Soccer League)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Africa%20Premier%20Soccer%20League_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Africa%20Premier%20Soccer%20League_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Africa%20Premier%20Soccer%20League_20252026.xlsx' }
+        ]
+    };
+
+    // ==========================================
+    // 2. LÓGICA & ESTADO
+    // ==========================================
+    let repository = {};
+    let chartInstance = null;
+    let currentTeam = '';
+    let currentView = 'marcados';
+
+    // Inicialização
+    window.onload = () => {
+        const sel = document.getElementById('leagueSelect');
+        // Preenche o Select com as chaves do dataSources ordenadas
+        Object.keys(dataSources).sort().forEach(key => {
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = key;
+            sel.appendChild(opt);
+        });
+        
+        sel.addEventListener('change', loadData);
+        document.getElementById('teamSelect').addEventListener('change', (e) => {
+            currentTeam = e.target.value;
+            renderDashboard();
+        });
+    };
+
+    // Alternar Visualização
+    function switchView(type) {
+        currentView = type;
+        document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        if (currentTeam) renderDashboard();
+    }
+
+    // Carregamento de Dados (SheetJS)
+    async function loadData(e) {
+        const region = e.target.value;
+        const loader = document.getElementById('loader');
+        const teamSel = document.getElementById('teamSelect');
+        const main = document.getElementById('mainContent');
+
+        loader.style.display = 'flex';
+        teamSel.innerHTML = '<option>Carregando dados...</option>';
+        teamSel.disabled = true;
+        main.style.opacity = '0';
+        repository = {}; // Reset
+
+        try {
+            const requests = dataSources[region].map(src => 
+                fetch(src.url)
+                .then(r => r.arrayBuffer())
+                .then(buf => {
+                    const wb = XLSX.read(buf, {type:'array'});
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                    return { year: src.year, data: json };
+                })
+            );
+
+            const results = await Promise.all(requests);
+            
+            // Unificação de times (Set)
+            const allTeams = new Set();
+            results.forEach(res => {
+                repository[res.year] = res.data.map(row => {
+                    const h = row.HomeTeam || row.Home || row['Home Team'];
+                    const a = row.AwayTeam || row.Away || row['Away Team'];
+                    if(h) allTeams.add(h);
+                    if(a) allTeams.add(a);
+                    return {
+                        Home: h, Away: a,
+                        Goals_H: row.Goals_H_Minutes || "",
+                        Goals_A: row.Goals_A_Minutes || ""
+                    };
+                });
+            });
+
+            // Popula Select de Times
+            teamSel.innerHTML = '<option value="" disabled selected>Escolha um clube</option>';
+            [...allTeams].sort().forEach(t => {
+                const op = document.createElement('option');
+                op.value = t; op.textContent = t;
+                teamSel.appendChild(op);
+            });
+            teamSel.disabled = false;
+
+        } catch (err) {
+            alert('Erro ao carregar dados: ' + err.message);
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+
+    // Parser de Minutos
+    function getMinutes(str) {
+        if (!str) return [];
+        return String(str).replace(/[\[\]']/g, '').split(',')
+            .map(s => {
+                s = s.trim();
+                if(!s) return null;
+                if(s.includes('+')) {
+                    const [a,b] = s.split('+');
+                    return Math.min(parseInt(a)+parseInt(b), 95);
+                }
+                return parseInt(s);
+            })
+            .filter(n => n !== null && !isNaN(n));
+    }
+
+    // Renderização Principal
+    function renderDashboard() {
+        const main = document.getElementById('mainContent');
+        const statsGrid = document.getElementById('statsGrid');
+        main.style.display = 'block';
+        setTimeout(() => main.style.opacity = '1', 50);
+
+        // Prepara dados para o Chart.js
+        const labels = ['0-10', '11-20', '21-30', '31-40', '41-50', '51-60', '61-70', '71-80', '81-90', '90+'];
+        const datasets = [];
+        let allMinutes = [];
+        let yearStats = []; // Para cards e insights
+
+        // Cores (Ciclo de 3 gradientes)
+        const styles = [
+            { bg: 'rgba(56, 189, 248, 0.5)', border: '#38bdf8' }, // Azul
+            { bg: 'rgba(168, 85, 247, 0.5)', border: '#a855f7' }, // Roxo
+            { bg: 'rgba(234, 179, 8, 0.5)', border: '#eab308' }   // Amarelo
+        ];
+
+        let styleIdx = 0;
+
+        Object.keys(repository).sort().forEach(year => {
+            const matches = repository[year];
+            // Filtra jogos do time
+            const home = matches.filter(m => m.Home === currentTeam);
+            const away = matches.filter(m => m.Away === currentTeam);
+
+            if (home.length === 0 && away.length === 0) return; // Time não jogou neste ano
+
+            let minutes = [];
+            if (currentView === 'marcados') {
+                home.forEach(m => minutes.push(...getMinutes(m.Goals_H)));
+                away.forEach(m => minutes.push(...getMinutes(m.Goals_A)));
+            } else {
+                home.forEach(m => minutes.push(...getMinutes(m.Goals_A)));
+                away.forEach(m => minutes.push(...getMinutes(m.Goals_H)));
+            }
+
+            allMinutes.push(...minutes);
+            yearStats.push({ year, count: minutes.length });
+
+            // Binning (Agrupamento em faixas de 10 min)
+            const bins = new Array(10).fill(0);
+            minutes.forEach(m => {
+                let idx = Math.floor((m-1)/10);
+                if (idx < 0) idx = 0;
+                if (idx > 9) idx = 9;
+                bins[idx]++;
+            });
+
+            const style = styles[styleIdx % 3];
+            styleIdx++;
+
+            datasets.push({
+                label: year,
+                data: bins,
+                backgroundColor: style.bg,
+                borderColor: style.border,
+                borderWidth: 2,
+                borderRadius: 4,
+                hoverBackgroundColor: style.border
+            });
+        });
+
+        // 1. Atualiza Gráfico
+        updateChart(labels, datasets);
+
+        // 2. Gera Insights
+        generateInsights(allMinutes, yearStats);
+
+        // 3. Mini Stats Grid
+        statsGrid.innerHTML = '';
+        yearStats.forEach((stat, i) => {
+            const color = styles[i % 3].border;
+            statsGrid.innerHTML += `
+                <div class="mini-stat" style="border-top: 3px solid ${color}">
+                    <span class="mini-year" style="color:${color}">${stat.year}</span>
+                    <div class="mini-val">${stat.count}</div>
+                    <div style="font-size:0.7rem; color:#64748b">Gols</div>
+                </div>
+            `;
+        });
+    }
+
+    // Chart.js Logic
+    function updateChart(labels, datasets) {
+        const ctx = document.getElementById('goalsChart').getContext('2d');
+        
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#cbd5e1', font: {family: 'Outfit'} } },
+                    tooltip: { 
+                        mode: 'index', 
+                        intersect: false,
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#38bdf8',
+                        bodyFont: { size: 13 }
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#64748b' }
+                    },
+                    x: { 
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8' }
+                    }
+                }
+            }
+        });
+    }
+
+    // Insights Logic
+    function generateInsights(allMinutes, yearStats) {
+        // Padrão de Tempo (Bin mais frequente)
+        const bins = new Array(10).fill(0);
+        allMinutes.forEach(m => {
+            let idx = Math.floor((m-1)/10);
+            if(idx > 9) idx = 9; if(idx < 0) idx = 0;
+            bins[idx]++;
+        });
+        
+        const maxVal = Math.max(...bins);
+        const maxIdx = bins.indexOf(maxVal);
+        const range = maxIdx === 9 ? "90+" : `${maxIdx*10+1}-${(maxIdx+1)*10}`;
+        const percentage = allMinutes.length ? ((maxVal/allMinutes.length)*100).toFixed(1) : 0;
+
+        document.getElementById('patternTime').innerHTML = `${range}<small style="font-size:1rem">'</small>`;
+        document.getElementById('patternDesc').innerText = `Concentra ${percentage}% dos gols neste período.`;
+
+        // Melhor Ano
+        const best = yearStats.reduce((prev, current) => (prev.count > current.count) ? prev : current, {year:'-', count:0});
+        document.getElementById('bestYear').innerText = best.year;
+        document.getElementById('bestYearDesc').innerText = `Recorde de ${best.count} gols na temporada.`;
+    }
+</script>
+
+</body>
+</html>
