@@ -731,7 +731,7 @@
     function updateChart(labels, datasets) {
         const ctx = document.getElementById('goalsChart').getContext('2d');
         
-        // Cores Dinâmicas baseadas no Tema
+        // Cores Dinâmicas (Mantive sua lógica de tema)
         const isLight = document.body.classList.contains('light-mode');
         const textColor = isLight ? '#334155' : '#cbd5e1';
         const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
@@ -743,6 +743,9 @@
             type: 'bar',
             data: { labels, datasets },
             options: {
+                // A MÁGICA ACONTECE AQUI:
+                indexAxis: 'y', // Isso transforma a barra em horizontal
+                
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
@@ -759,14 +762,16 @@
                     }
                 },
                 scales: {
-                    y: { 
+                    // Agora o Eixo X é o dos VALORES (Quantidade de Gols)
+                    x: { 
                         beginAtZero: true, 
-                        grid: { color: gridColor },
+                        grid: { color: gridColor }, // Grade vertical ajuda a medir o comprimento
                         ticks: { color: textColor }
                     },
-                    x: { 
-                        grid: { display: false },
-                        ticks: { color: textColor }
+                    // Agora o Eixo Y é o das CATEGORIAS (Minutos)
+                    y: { 
+                        grid: { display: false }, // Remove poluição visual entre os nomes
+                        ticks: { color: textColor, font: { weight: 'bold' } } // Destaquei os minutos
                     }
                 }
             }
