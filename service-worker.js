@@ -1,4 +1,4 @@
-const CACHE_NAME = 'Minutagem';
+const CACHE_NAME = 'Minutagem-v2';
 
 const ASSETS = [
   './',
