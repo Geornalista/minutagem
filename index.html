@@ -10,38 +10,42 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            /* Tema Dark (Padrão) */
+            /* Tema Dark (Base) - Cores mais sóbrias */
             --bg-body: #0f172a;
             --bg-card: #1e293b;
-            --text-main: #f8fafc;
+            --text-main: #f1f5f9;
             --text-muted: #94a3b8;
-            --accent: #38bdf8;
+            --accent: #60a5fa; /* Azul suave */
             --border-color: rgba(255,255,255,0.05);
             
-            /* Cores dos Gráficos (Gradientes) */
-            --grad-1: linear-gradient(to top, rgba(56, 189, 248, 0.5), rgba(56, 189, 248, 0.1));
-            --border-1: #38bdf8;
+            /* Novas Cores Pastel (Suaves) */
+            /* Azul Gelo */
+            --grad-1: rgba(56, 189, 248, 0.15); 
+            --border-1: #7dd3fc;
             
-            --grad-2: linear-gradient(to top, rgba(168, 85, 247, 0.5), rgba(168, 85, 247, 0.1));
-            --border-2: #a855f7;
+            /* Lavanda */
+            --grad-2: rgba(167, 139, 250, 0.15);
+            --border-2: #c4b5fd;
             
-            --grad-3: linear-gradient(to top, rgba(234, 179, 8, 0.5), rgba(234, 179, 8, 0.1));
-            --border-3: #eab308;
+            /* Menta */
+            --grad-3: rgba(45, 212, 191, 0.15);
+            --border-3: #99f6e4;
         }
 
         /* Tema Light (Claro) */
         body.light-mode {
-            --bg-body: #f1f5f9;
+            --bg-body: #f8fafc;
             --bg-card: #ffffff;
-            --text-main: #0f172a;
+            --text-main: #334155;
             --text-muted: #64748b;
-            --accent: #0ea5e9; /* Um azul um pouco mais escuro para contraste */
+            --accent: #0284c7;
             --border-color: #e2e8f0;
         }
 
@@ -151,7 +155,7 @@
             padding: 20px;
             border-radius: 16px;
             border: 1px solid var(--border-color);
-            height: 500px;
+            height: 600px; /* Aumentei a altura para caber melhor horizontalmente */
             position: relative;
             transition: background-color 0.3s;
         }
@@ -201,7 +205,7 @@
                 <i class="fas fa-sun"></i>
             </button>
         </div>
-        <div class="badge">V1.0</div>
+        <div class="badge">V4.0 • Horizontal</div>
     </header>
 
     <div class="dashboard-grid">
@@ -649,6 +653,9 @@
             .filter(n => n !== null && !isNaN(n));
     }
 
+    // ==========================================
+    // RENDERIZAÇÃO (COM NOVAS CORES E LÓGICA HORIZONTAL)
+    // ==========================================
     function renderDashboard() {
         const main = document.getElementById('mainContent');
         const statsGrid = document.getElementById('statsGrid');
@@ -660,10 +667,12 @@
         let allMinutes = [];
         let yearStats = [];
 
+        // PALETA SUAVE (PASTEL)
+        // Usamos opacidade baixa (0.2) no fundo para não ofuscar
         const styles = [
-            { bg: 'rgba(56, 189, 248, 0.5)', border: '#38bdf8' }, 
-            { bg: 'rgba(168, 85, 247, 0.5)', border: '#a855f7' }, 
-            { bg: 'rgba(234, 179, 8, 0.5)', border: '#eab308' }   
+            { bg: 'rgba(125, 211, 252, 0.2)', border: '#7dd3fc' }, // Azul Gelo
+            { bg: 'rgba(196, 181, 253, 0.2)', border: '#c4b5fd' }, // Lavanda
+            { bg: 'rgba(153, 246, 228, 0.2)', border: '#99f6e4' }  // Menta
         ];
 
         let styleIdx = 0;
@@ -704,14 +713,20 @@
                 backgroundColor: style.bg,
                 borderColor: style.border,
                 borderWidth: 2,
-                borderRadius: 4,
-                hoverBackgroundColor: style.border
+                borderRadius: 4, 
+                hoverBackgroundColor: style.border,
+                // Configuração básica para o plugin pegar
+                datalabels: {
+                    align: 'end',
+                    anchor: 'end'
+                }
             });
         });
 
         updateChart(labels, datasets);
         generateInsights(allMinutes, yearStats);
 
+        // Atualiza Mini Grid (Cards inferiores)
         statsGrid.innerHTML = '';
         yearStats.forEach((stat, i) => {
             const color = styles[i % 3].border;
@@ -726,12 +741,11 @@
     }
 
     // ==========================================
-    // 3. CHART.JS ATUALIZADO (CORES DINÂMICAS)
+    // CHART.JS (HORIZONTAL + RÓTULOS + CORES)
     // ==========================================
     function updateChart(labels, datasets) {
         const ctx = document.getElementById('goalsChart').getContext('2d');
         
-        // Cores Dinâmicas (Mantive sua lógica de tema)
         const isLight = document.body.classList.contains('light-mode');
         const textColor = isLight ? '#334155' : '#cbd5e1';
         const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
@@ -739,39 +753,49 @@
 
         if (chartInstance) chartInstance.destroy();
 
+        // Registrar plugin DataLabels
+        Chart.register(ChartDataLabels);
+
         chartInstance = new Chart(ctx, {
             type: 'bar',
             data: { labels, datasets },
             options: {
-                // A MÁGICA ACONTECE AQUI:
-                indexAxis: 'y', // Isso transforma a barra em horizontal
-                
+                indexAxis: 'y', // MODO HORIZONTAL (Ideal para Celular)
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {
+                    padding: { right: 30 } // Espaço extra para o número não cortar
+                },
                 plugins: {
                     legend: { labels: { color: textColor, font: {family: 'Outfit'} } },
                     tooltip: { 
                         mode: 'index', 
                         intersect: false,
                         backgroundColor: tooltipBg,
-                        titleColor: '#38bdf8',
+                        titleColor: '#60a5fa', 
                         bodyColor: textColor,
                         borderColor: gridColor,
-                        borderWidth: 1,
-                        bodyFont: { size: 13 }
+                        borderWidth: 1
+                    },
+                    // CONFIGURAÇÃO DOS NÚMEROS NAS BARRAS
+                    datalabels: {
+                        color: textColor,
+                        font: { weight: 'bold', size: 11 },
+                        formatter: (value) => value > 0 ? value : '', // Esconde zeros
+                        anchor: 'end', // Posição (final da barra)
+                        align: 'end',  // Alinhamento (fora da barra)
+                        offset: 4      // Distância da barra
                     }
                 },
                 scales: {
-                    // Agora o Eixo X é o dos VALORES (Quantidade de Gols)
                     x: { 
                         beginAtZero: true, 
-                        grid: { color: gridColor }, // Grade vertical ajuda a medir o comprimento
+                        grid: { color: gridColor },
                         ticks: { color: textColor }
                     },
-                    // Agora o Eixo Y é o das CATEGORIAS (Minutos)
                     y: { 
-                        grid: { display: false }, // Remove poluição visual entre os nomes
-                        ticks: { color: textColor, font: { weight: 'bold' } } // Destaquei os minutos
+                        grid: { display: false },
+                        ticks: { color: textColor, font: { weight: '600' } }
                     }
                 }
             }
