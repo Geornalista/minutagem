@@ -220,20 +220,25 @@
     // 1. DADOS
     // ==========================================
     const dataSources = {
+        'África do Sul (Premier Soccer League)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Africa%20Premier%20Soccer%20League_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Africa%20Premier%20Soccer%20League_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Africa%20Premier%20Soccer%20League_20252026.xlsx' }
+        ],
         'Alemanha (Bundesliga)': [
             { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%20Bundesliga_20232024.xlsx' },
             { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%20Bundesliga_20242025.xlsx' },
             { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%20Bundesliga_20252026.xlsx' }
         ],
         'Alemanha (2. Bundesliga)': [
+            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%203.%20Liga_20232024.xlsx' },
+            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%203.%20Liga_20242025.xlsx' },
+            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%203.%20Liga_20252026.xlsx' },
+        ],
+        'Alemanha (3. Liga)': [
             { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%202.%20Bundesliga_20232024.xlsx' },
             { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%202.%20Bundesliga_20242025.xlsx' },
             { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Germany%202.%20Bundesliga_20252026.xlsx' }
-        ],
-        'América do Sul (Libertadores)': [
-            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20America%20Copa%20Libertadores_2023.xlsx' },
-            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20America%20Copa%20Libertadores_2024.xlsx' },
-            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20America%20Copa%20Libertadores_2025.xlsx' }
         ],
         'Arábia Saudita (Pro League)': [
             { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Saudi%20Arabia%20Professional%20League_20232024.xlsx' },
@@ -285,11 +290,6 @@
             { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Korea%20K%20League%201_2024.xlsx' },
             { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Korea%20K%20League%201_2025.xlsx' }
         ],
-        'Coreia do Sul (K-League 2)': [
-            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Korea%20K%20League%202_2023.xlsx' },
-            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Korea%20K%20League%202_2024.xlsx' },
-            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Korea%20K%20League%202_2025.xlsx' }
-        ],
         'Croácia (Prva HNL)': [
             { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Croatia%20Prva%20HNL_20232024.xlsx' },
             { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Croatia%20Prva%20HNL_20242025.xlsx' },
@@ -334,12 +334,7 @@
             { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/USA%20MLS_2023.xlsx' },
             { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/USA%20MLS_2024.xlsx' },
             { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/USA%20MLS_2025.xlsx' }
-        ],
-        'Europa (UEFA Champions League)': [
-            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Europe%20UEFA%20Champions%20League_20232024.xlsx' },
-            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Europe%20UEFA%20Champions%20League_20242025.xlsx' },
-            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Europe%20UEFA%20Champions%20League_20252026.xlsx' }
-        ],
+        ]
         'França (Ligue 1)': [
             { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20Ligue%201_20232024.xlsx' },
             { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20Ligue%201_20242025.xlsx' },
@@ -349,11 +344,6 @@
             { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20Ligue%202_20232024.xlsx' },
             { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20Ligue%202_20242025.xlsx' },
             { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20Ligue%202_20252026.xlsx' }
-        ],
-        'França (National)': [
-            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20National_20232024.xlsx' },
-            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20National_20242025.xlsx' },
-            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/France%20National_20252026.xlsx' }
         ],
         'Grécia (Super League)': [
             { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Greece%20Super%20League_20232024.xlsx' },
@@ -410,11 +400,6 @@
             { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Japan%20J1%20League_2024.xlsx' },
             { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Japan%20J1%20League_2025.xlsx' }
         ],
-        'Japão (J2 League)': [
-            { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Japan%20J2%20League_2023.xlsx' },
-            { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Japan%20J2%20League_2024.xlsx' },
-            { year: '2025', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Japan%20J2%20League_2025.xlsx' }
-        ],
         'Noruega (Eliteserien)': [
             { year: '2023', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Norway%20Eliteserien_2023.xlsx' },
             { year: '2024', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Norway%20Eliteserien_2024.xlsx' },
@@ -459,11 +444,6 @@
             { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Switzerland%20Super%20League_20232024.xlsx' },
             { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Switzerland%20Super%20League_20242025.xlsx' },
             { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/Switzerland%20Super%20League_20252026.xlsx' }
-        ],
-        'África do Sul (Premier Soccer League)': [
-            { year: '23/24', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Africa%20Premier%20Soccer%20League_20232024.xlsx' },
-            { year: '24/25', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Africa%20Premier%20Soccer%20League_20242025.xlsx' },
-            { year: '25/26', url: 'https://raw.githubusercontent.com/futpythontrader/YouTube/main/Bases_de_Dados/FootyStats/South%20Africa%20Premier%20Soccer%20League_20252026.xlsx' }
         ]
     };
 
